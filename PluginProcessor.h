@@ -56,7 +56,7 @@ public:
 
     const std::tuple<const int, std::atomic<float>*, std::atomic<float>*, std::atomic<float>*> addEnvelopePoint (int osc, float time, float amplitude);
 
-    void removeEnvelopePoint (int osc);
+    void removeEnvelopePoint (int osc, int point_number);
 
     void toggleStateEnvelopePoint (int osc);
 

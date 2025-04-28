@@ -282,6 +282,12 @@ const std::tuple<const int, std::atomic<float>*, std::atomic<float>*, std::atomi
     return std::make_tuple(point_number, time_ptr, amplitude_ptr, interpolation_ptr); 
 }
 
+void AudioPluginAudioProcessor::removeEnvelopePoint(int osc, int point_number)
+{
+    //TODO: need to do it for the correct osc
+    inactiveEnvelopePoints.push_back(point_number);
+}
+
 juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::createMatrixParameterLayout()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
@@ -353,3 +359,4 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new AudioPluginAudioProcessor();
 }
+

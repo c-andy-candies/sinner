@@ -36,16 +36,30 @@ public:
             if (std::abs(clicked_time - it->getTime()) < 0.01f && std::abs(clicked_amp - it->getAmplitude()) < 0.01f)
             {
 
-                // Select this point for dragging
-                selectedPoint = *it; // Store the selected point
-                selectedPointIndex = it; // Store the iterator to the selected point
+                //TODO: UX-wise, is this the best way to delete a point?
+                //Delete the point if the CTRL-key is pressed
+                if (event.mods.isCtrlDown())
+                {
+                    //TODO: hardcoded value (osc)
+                    processorRef.removeEnvelopePoint(0, it->getPointNumber());
+                    envelopePoints.erase(it);
+                    repaint();
+                } 
+                else 
+                {
+                    // Select this point for dragging
+                    selectedPoint = *it; // Store the selected point
+                    selectedPointIndex = it; // Store the iterator to the selected point
+                }
+
                 return;
             }
         }
 
         if (envelopePoints.size() < NUMBER_OF_ENVELOPE_POINTS) {
             
-            // If no point was selected, add a new point
+            // If no point was selected or deleted, add a new point
+            //TODO: hardcoded value (osc)
             auto [pointNumber, time, amplitude, interpolation] = processorRef.addEnvelopePoint(0, clicked_time, clicked_amp);
 
             EnvelopePoint new_point = EnvelopePoint(pointNumber, time, amplitude, interpolation); 
