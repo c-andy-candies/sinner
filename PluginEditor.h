@@ -1,8 +1,12 @@
 #pragma once
 
+#include <memory>
+#include <vector>
 #include "PluginProcessor.h"
 #include "MatrixPage.cpp"
 #include "OscillatorPage.cpp"
+#include "OscillatorView.cpp"
+#include "constants.h"
 
 class AudioPluginAudioProcessorEditor final : public juce::AudioProcessorEditor
 {
@@ -23,8 +27,7 @@ private:
     juce::TextButton sideItemMatrix;
 
     //TODO: Should probably put them in an array with length NUMBER_OF_OSCILLATORS
-    juce::TextButton sideItemOscA;
-    juce::TextButton sideItemOscB;
+    std::array<juce::TextButton, NUMBER_OF_OSCILLATORS> sideItemOscs;
 
     juce::TextButton footer;
  
@@ -32,6 +35,8 @@ private:
     OscillatorPage oscillatorPage;
 
     juce::Component* currentPage;
+
+    std::vector<OscillatorView> oscViews;
 
     void switchToMatrixPage()
     {
@@ -41,10 +46,11 @@ private:
         resized();
     }
 
-    void switchToOscillatorPage()
+    void switchToOscillatorPage(int osc)
     {
         currentPage->setVisible(false);
         currentPage = &oscillatorPage;
+        oscillatorPage.setOscView(&oscViews[osc]);
         currentPage->setVisible(true);
         resized();
     }

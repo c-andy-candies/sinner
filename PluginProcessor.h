@@ -4,6 +4,7 @@
 #include <tuple>
 #include <vector>
 #include "Matrix.hpp"
+#include "constants.h"
 
 //==============================================================================
 class AudioPluginAudioProcessor final : public juce::AudioProcessor
@@ -70,15 +71,15 @@ private:
     juce::AudioProcessorValueTreeState::ParameterLayout createMatrixParameterLayout();
     juce::AudioProcessorValueTreeState matrixParameters;
 
-    juce::AudioProcessorValueTreeState::ParameterLayout createOscParameterLayout();
-    juce::AudioProcessorValueTreeState oscillatorParameters;
+    juce::AudioProcessorValueTreeState::ParameterLayout createOscParameterLayout(int osc);
+    std::array<std::unique_ptr<juce::AudioProcessorValueTreeState>, NUMBER_OF_OSCILLATORS> oscillatorParameters;
 
     juce::Synthesiser synth;
     Matrix modulation_matrix;
 
-    std::vector<int> inactiveEnvelopePoints;
-
-    const int getInactiveEnvelopePoint();
+    //TODO: might be possible to move into OscillatorView
+    std::array<std::vector<int>, NUMBER_OF_OSCILLATORS> inactiveEnvelopePoints;
+    const int getInactiveEnvelopePoint(int osc);
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)

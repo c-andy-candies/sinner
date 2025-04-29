@@ -5,10 +5,10 @@
 #include "constants.h"
 #include "juce_audio_processors/juce_audio_processors.h"
 #include "juce_core/juce_core.h"
+#include <array>
 #include <memory>
 #include <string>
 #include <tuple>
-#include <vector>
 
 //==============================================================================
 AudioPluginAudioProcessor::AudioPluginAudioProcessor()
@@ -20,8 +20,7 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
                        )
-     , matrixParameters (*this, nullptr, juce::Identifier ("MatrixParameters"), createMatrixParameterLayout())
-     , oscillatorParameters(*this, nullptr, juce::Identifier ("OscillatorParameters"), createOscParameterLayout())
+     , matrixParameters (*this, nullptr, juce::Identifier ("MatrixParameters"), createMatrixParameterLayout()) 
 {
 
     for (auto i = 0; i < NUMBER_OF_VOICES; ++i)
@@ -55,12 +54,17 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
             modulation_matrix.setHarmonicVolume(i, j, matrixParameters.getRawParameterValue("harmonic" + harmonic_number + "_volume_of_osc_" + oscillator_number));
         }
 
-    }
+        oscillatorParameters[i] = std::make_unique<juce::AudioProcessorValueTreeState>(
+            *this, nullptr, 
+            juce::Identifier("Oscillator" + std::to_string(i) + "Parameters"), 
+            createOscParameterLayout(i));
 
-    for(auto i = 0; i < NUMBER_OF_ENVELOPE_POINTS; ++i)
-    {
-        inactiveEnvelopePoints.push_back(i);
-    }
+        for(auto env = 0; env < NUMBER_OF_ENVELOPE_POINTS; ++env)
+        {
+            inactiveEnvelopePoints[i].push_back(env);
+        }
+        
+    } 
 
 }
 
@@ -230,19 +234,19 @@ void AudioPluginAudioProcessor::setToOutput (int i, float new_value)
 void AudioPluginAudioProcessor::setOscillatorRatio (int osc, float new_value)
 {
     //TODO: need to call it on the correct osc
-    oscillatorParameters.getParameter("osc_" + std::to_string(osc) + "_ratio")->setValueNotifyingHost(new_value);
+    oscillatorParameters[osc]->getParameter("osc_" + std::to_string(osc) + "_ratio")->setValueNotifyingHost(new_value);
 }
 
 void AudioPluginAudioProcessor::setOscillatorVolume (int osc, float new_value)
 {
     //TODO: need to call it on the correct osc
-    oscillatorParameters.getParameter("osc_" + std::to_string(osc) + "_volume")->setValueNotifyingHost(new_value);
+    oscillatorParameters[osc]->getParameter("osc_" + std::to_string(osc) + "_volume")->setValueNotifyingHost(new_value);
 }
 
 void AudioPluginAudioProcessor::setHarmonicVolume (int osc, int harmonic, float new_value)
 {
     //TODO: need to call it on the correct osc
-    oscillatorParameters.getParameter("harmonic" + std::to_string(harmonic) + "_ratio_of_osc_0")->setValueNotifyingHost(new_value);
+    oscillatorParameters[osc]->getParameter("harmonic" + std::to_string(harmonic) + "_ratio_of_osc_0")->setValueNotifyingHost(new_value);
 }
 
 void AudioPluginAudioProcessor::moveEnvelopePoint (int osc, int point_number, float time_new_value, float amplitude_new_value)
@@ -251,15 +255,17 @@ void AudioPluginAudioProcessor::moveEnvelopePoint (int osc, int point_number, fl
     auto oscillator_number = std::to_string(osc);
     auto envelope_point_number = std::to_string(point_number);
 
-    oscillatorParameters.getParameter("env_point" + envelope_point_number + "_time_osc_" + oscillator_number)->setValueNotifyingHost(time_new_value);
-    oscillatorParameters.getParameter("env_point" + envelope_point_number + "_amplitude_osc_" + oscillator_number)->setValueNotifyingHost(amplitude_new_value);
+    oscillatorParameters[osc]->getParameter("env_point" + envelope_point_number + "_time_osc_" + oscillator_number)->setValueNotifyingHost(time_new_value);
+    oscillatorParameters[osc]->getParameter("env_point" + envelope_point_number + "_amplitude_osc_" + oscillator_number)->setValueNotifyingHost(amplitude_new_value);
 
 }
 
-const int AudioPluginAudioProcessor::getInactiveEnvelopePoint()
+const int AudioPluginAudioProcessor::getInactiveEnvelopePoint(int osc)
 {
-    auto inactivePoint = inactiveEnvelopePoints.back();
-    inactiveEnvelopePoints.pop_back();
+    //TODO: need to do it for the correct osc
+
+    auto inactivePoint = inactiveEnvelopePoints[osc].back();
+    inactiveEnvelopePoints[osc].pop_back();
     return inactivePoint;
 
 }
@@ -269,15 +275,15 @@ const std::tuple<const int, std::atomic<float>*, std::atomic<float>*, std::atomi
 
     auto oscillator_number = std::to_string(osc);
     
-    auto point_number = getInactiveEnvelopePoint();
+    auto point_number = getInactiveEnvelopePoint(osc);
     auto envelope_point_number = std::to_string(point_number);
 
-    oscillatorParameters.getParameter("env_point" + envelope_point_number + "_time_osc_" + oscillator_number)->setValueNotifyingHost(time_new_value);
-    oscillatorParameters.getParameter("env_point" + envelope_point_number + "_amplitude_osc_" + oscillator_number)->setValueNotifyingHost(amplitude_new_value);
+    oscillatorParameters[osc]->getParameter("env_point" + envelope_point_number + "_time_osc_" + oscillator_number)->setValueNotifyingHost(time_new_value);
+    oscillatorParameters[osc]->getParameter("env_point" + envelope_point_number + "_amplitude_osc_" + oscillator_number)->setValueNotifyingHost(amplitude_new_value);
 
-    auto time_ptr = oscillatorParameters.getRawParameterValue     ("env_point" + envelope_point_number + "_time_osc_" + oscillator_number);
-    auto amplitude_ptr = oscillatorParameters.getRawParameterValue("env_point" + envelope_point_number + "_amplitude_osc_" + oscillator_number);
-    auto interpolation_ptr = oscillatorParameters.getRawParameterValue("env_point" + envelope_point_number + "_interp_osc_" + oscillator_number);
+    auto time_ptr = oscillatorParameters[osc]->getRawParameterValue     ("env_point" + envelope_point_number + "_time_osc_" + oscillator_number);
+    auto amplitude_ptr = oscillatorParameters[osc]->getRawParameterValue("env_point" + envelope_point_number + "_amplitude_osc_" + oscillator_number);
+    auto interpolation_ptr = oscillatorParameters[osc]->getRawParameterValue("env_point" + envelope_point_number + "_interp_osc_" + oscillator_number);
     
     return std::make_tuple(point_number, time_ptr, amplitude_ptr, interpolation_ptr); 
 }
@@ -285,7 +291,7 @@ const std::tuple<const int, std::atomic<float>*, std::atomic<float>*, std::atomi
 void AudioPluginAudioProcessor::removeEnvelopePoint(int osc, int point_number)
 {
     //TODO: need to do it for the correct osc
-    inactiveEnvelopePoints.push_back(point_number);
+    inactiveEnvelopePoints[osc].push_back(point_number);
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::createMatrixParameterLayout()
@@ -314,40 +320,42 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
     return layout;
 }
 
-juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::createOscParameterLayout()
+juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::createOscParameterLayout(int osc)
 {
 
-    juce::AudioProcessorValueTreeState::ParameterLayout layout;
-
-    //TODO: this method needs to be called for each oscillator, research if it's better to have a different parameter layout for each oscillator or just one
+    //TODO: Research if it's better to have a different parameter layout for each oscillator or just one
     //maybe separation is better for the undo/redo possibilities (e.g. while working on a oscillator i am in its page and if I undo I want to undo here not somewhere I can't see i.e. another place)
     //Maybe we can also generate all the parametersLayouts all in one method since anyway we have to iterate through the whole "matrix"
 
+    juce::AudioProcessorValueTreeState::ParameterLayout layout;
+
+    auto oscillator_number = std::to_string(osc);
+
     //Oscillator Ratio
-    layout.add(std::make_unique<juce::AudioParameterFloat>("osc_0_ratio", "Oscillator A Ratio", juce::NormalisableRange<float>(0.0f,1.0f),1.0f)); 
+    layout.add(std::make_unique<juce::AudioParameterFloat>("osc_" + oscillator_number + "_ratio", "Oscillator " + oscillator_number + " Ratio", juce::NormalisableRange<float>(0.0f,1.0f),1.0f)); 
     //Oscillator Volume
-    layout.add(std::make_unique<juce::AudioParameterFloat>("osc_0_volume", "Oscillator A Volume", juce::NormalisableRange<float>(0.0f,1.0f),1.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>("osc_" + oscillator_number + "_volume", "Oscillator " + oscillator_number + " Volume", juce::NormalisableRange<float>(0.0f,1.0f),1.0f));
 
     for(auto j = 0; j < NUMBER_OF_HARMONICS; ++j)
     {
         auto harmonic_number = std::to_string(j);
 
         //Harmonic Ratio
-        layout.add(std::make_unique<juce::AudioParameterFloat>("harmonic" + harmonic_number + "_ratio_of_osc_0", "Harmonic " + harmonic_number + "'s Ratio of Oscillator 0", juce::NormalisableRange<float>(0.0f,1.0f), 0.0f));
+        layout.add(std::make_unique<juce::AudioParameterFloat>("harmonic" + harmonic_number + "_ratio_of_osc_" + oscillator_number, "Harmonic " + harmonic_number + "'s Ratio of Oscillator " + oscillator_number, juce::NormalisableRange<float>(0.0f,1.0f), 0.0f));
         //Harmonic Volume
-        layout.add(std::make_unique<juce::AudioParameterFloat>("harmonic" + harmonic_number + "_volume_of_osc_0", "Harmonic " + harmonic_number + "'s Volume of Oscillator 0", juce::NormalisableRange<float>(0.0f,1.0f), 0.0f));
+        layout.add(std::make_unique<juce::AudioParameterFloat>("harmonic" + harmonic_number + "_volume_of_osc_" + oscillator_number, "Harmonic " + harmonic_number + "'s Volume of Oscillator " + oscillator_number, juce::NormalisableRange<float>(0.0f,1.0f), 0.0f));
     }
 
     for(auto i = 0; i < NUMBER_OF_ENVELOPE_POINTS; ++i)
     {
         auto point_number = std::to_string(i);
 
-        layout.add(std::make_unique<juce::AudioParameterFloat>("env_point" + point_number + "_time_osc_0", "Envelope Point " + point_number + "'s Time of Oscillator 0", juce::NormalisableRange<float>(0.0f,1.0f), 0.0f));    
+        layout.add(std::make_unique<juce::AudioParameterFloat>("env_point" + point_number + "_time_osc_" + oscillator_number, "Envelope Point " + point_number + "'s Time of Oscillator " + oscillator_number, juce::NormalisableRange<float>(0.0f,1.0f), 0.0f));    
 
-        layout.add(std::make_unique<juce::AudioParameterFloat>("env_point" + point_number + "_amplitude_osc_0", "Envelope Point " + point_number + "'s Amplitude of Oscillator 0", juce::NormalisableRange<float>(0.0f,1.0f), 0.0f));    
+        layout.add(std::make_unique<juce::AudioParameterFloat>("env_point" + point_number + "_amplitude_osc_" + oscillator_number, "Envelope Point " + point_number + "'s Amplitude of Oscillator " + oscillator_number, juce::NormalisableRange<float>(0.0f,1.0f), 0.0f));    
 
         //Type of interpolation of the curve which ENDS in this point
-        layout.add(std::make_unique<juce::AudioParameterFloat>("env_curve" + point_number + "_interp_osc_0", "Envelope Curve " + point_number + "'s Interpolation of Oscillator 0", juce::NormalisableRange<float>(0.0f,1.0f), 0.0f));    
+        layout.add(std::make_unique<juce::AudioParameterFloat>("env_curve" + point_number + "_interp_osc_" + oscillator_number, "Envelope Curve " + point_number + "'s Interpolation of Oscillator " + oscillator_number, juce::NormalisableRange<float>(0.0f,1.0f), 0.0f));    
 
     }
 

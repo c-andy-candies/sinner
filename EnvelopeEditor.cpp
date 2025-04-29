@@ -4,15 +4,14 @@
 #include "PluginProcessor.h"
 #include "EnvelopePoint.cpp"
 #include "constants.h"
+#include "OscillatorView.cpp"
 
 class EnvelopeEditor : public juce::Component
 {
 public:
     EnvelopeEditor(AudioPluginAudioProcessor& p)
-        : processorRef(p)
-    {
-        selectedPointIndex = envelopePoints.end();
-    }
+        : processorRef(p) 
+    {}
 
     void paint(juce::Graphics& g) override
     {
@@ -29,7 +28,7 @@ public:
         auto clicked_amp = static_cast<float>(event.y) / height;
         
         // Check if the user clicked near an existing point
-        for (auto it = envelopePoints.begin(); it != envelopePoints.end(); ++it)
+        for (auto it = currentOsc->getEnvelopePointsBegin(); it != currentOsc->getEnvelopePointsEnd(); ++it)
         {
 
             //TODO: set the threshold to select a point, it should be the actual size of the point
@@ -40,9 +39,8 @@ public:
                 //Delete the point if the CTRL-key is pressed
                 if (event.mods.isCtrlDown())
                 {
-                    //TODO: hardcoded value (osc)
-                    processorRef.removeEnvelopePoint(0, it->getPointNumber());
-                    envelopePoints.erase(it);
+                    processorRef.removeEnvelopePoint(currentOsc->getOscNumber(), it->getPointNumber());
+                    currentOsc->removeEnvelopePoint(it);
                     repaint();
                 } 
                 else 
@@ -56,14 +54,13 @@ public:
             }
         }
 
-        if (envelopePoints.size() < NUMBER_OF_ENVELOPE_POINTS) {
+        if (currentOsc->getEnvelopePointsSize() < NUMBER_OF_ENVELOPE_POINTS) {
             
             // If no point was selected or deleted, add a new point
-            //TODO: hardcoded value (osc)
-            auto [pointNumber, time, amplitude, interpolation] = processorRef.addEnvelopePoint(0, clicked_time, clicked_amp);
+            auto [pointNumber, time, amplitude, interpolation] = processorRef.addEnvelopePoint(currentOsc->getOscNumber(), clicked_time, clicked_amp);
 
             EnvelopePoint new_point = EnvelopePoint(pointNumber, time, amplitude, interpolation); 
-            envelopePoints.insert(new_point);
+            currentOsc->addEnvelopePoint(new_point);
 
             //TODO: Probably could select here the newly created point
 
@@ -75,7 +72,7 @@ public:
     void mouseDrag(const juce::MouseEvent& event) override
     {
 
-        if (selectedPointIndex != envelopePoints.end())
+        if (selectedPointIndex != currentOsc->getEnvelopePointsEnd())
         {
             auto width = getWidth();
             auto height = getHeight();
@@ -85,7 +82,7 @@ public:
             
             float min_time;
 
-            if (selectedPointIndex != envelopePoints.begin())
+            if (selectedPointIndex != currentOsc->getEnvelopePointsBegin())
             {
                 min_time = std::prev(selectedPointIndex)->getTime();
             } 
@@ -97,7 +94,7 @@ public:
             auto next_point = std::next(selectedPointIndex);
             float max_time;
 
-            if (next_point != envelopePoints.end())
+            if (next_point != currentOsc->getEnvelopePointsEnd())
             {
                 max_time = next_point->getTime();
             }
@@ -109,7 +106,7 @@ public:
             // Constrain the new position within the boundaries
             auto new_time = jlimit(min_time, max_time, clicked_time);
 
-            processorRef.moveEnvelopePoint(0, selectedPoint.getPointNumber(),  new_time, clicked_amp);
+            processorRef.moveEnvelopePoint(currentOsc->getOscNumber(), selectedPoint.getPointNumber(),  new_time, clicked_amp);
 
             repaint();
         }
@@ -117,14 +114,21 @@ public:
 
     void mouseUp(const juce::MouseEvent& event) override
     {
-        selectedPointIndex = envelopePoints.end(); // Deselect the point
+        selectedPointIndex = currentOsc->getEnvelopePointsEnd(); // Deselect the point
+    }
+
+    void setOscView(OscillatorView* osc_view)
+    {
+        currentOsc = osc_view;
+        selectedPointIndex = currentOsc->getEnvelopePointsEnd();
+        repaint();
     }
 
 private:
 
     AudioPluginAudioProcessor& processorRef;
 
-    std::set<EnvelopePoint> envelopePoints;
+    OscillatorView* currentOsc;
 
     std::set<EnvelopePoint>::iterator selectedPointIndex; // Iterator to the selected point
     EnvelopePoint selectedPoint; // Variable to hold the currently selected point's coordinates
@@ -136,9 +140,9 @@ private:
         auto width = getWidth();
         auto height = getHeight();
 
-        if (!envelopePoints.empty())
+        if (!currentOsc->isEnvelopePointsEmpty())
         {
-            auto firstPoint = *envelopePoints.begin();
+            auto firstPoint = *currentOsc->getEnvelopePointsBegin();
             auto firstPoint_width = firstPoint.getTime() * width;
             auto firstPoint_height = firstPoint.getAmplitude() * height;
             g.drawLine(0.0f, (float)height, firstPoint_width, firstPoint_height);
@@ -147,11 +151,11 @@ private:
             auto midY = (float)height + (firstPoint_height - height) / 2; // Midpoint Y calculation
             g.drawEllipse(midX - 5, midY - 5, 10, 10, 1.0f); // Draw the curvature control point
 
-            auto it = envelopePoints.begin();
+            auto it = currentOsc->getEnvelopePointsBegin();
             auto prev = it;
             ++it;
 
-            while (it != envelopePoints.end())
+            while (it != currentOsc->getEnvelopePointsEnd())
             {
                 auto prev_width = prev->getTime() * width;
                 auto prev_height = prev->getAmplitude() * height;
@@ -179,7 +183,7 @@ private:
             auto mid_Y = (prev_height + (float)height) / 2;
             g.drawEllipse(mid_X - 5, mid_Y - 5, 10, 10, 1.0f);
 
-            for (const auto& point : envelopePoints)
+            for (const auto& point : currentOsc->getEnvelopePoints())
             {
                 auto point_width = point.getTime() * width;
                 auto point_height = point.getAmplitude() * height;

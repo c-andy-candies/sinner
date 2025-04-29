@@ -4,8 +4,6 @@
 #include <unordered_map>
 #include <juce_audio_processors/juce_audio_processors.h>
 
-
-
 class Oscillator {
 public:
     Oscillator();

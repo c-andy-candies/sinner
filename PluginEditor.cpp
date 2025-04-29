@@ -1,7 +1,9 @@
 #include "PluginProcessor.h"
+#include "constants.h"
 #include "juce_core/juce_core.h"
 #include "juce_graphics/juce_graphics.h"
 #include "juce_gui_basics/juce_gui_basics.h"
+#include <string>
 #include "PluginEditor.h"
 
 //==============================================================================
@@ -25,17 +27,18 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     sideItemMatrix.setColour (juce::TextButton::buttonColourId, juce::Colours::grey);
     sideItemMatrix.setButtonText("Modulation Matrix");
     sideItemMatrix.onClick = [this] { switchToMatrixPage(); };
-
-    sideItemOscA.setColour (juce::TextButton::buttonColourId, juce::Colours::grey);
-    sideItemOscA.setButtonText("Oscillator A");
-    sideItemOscA.onClick = [this] { switchToOscillatorPage(); };
-
-    sideItemOscB.setColour (juce::TextButton::buttonColourId, juce::Colours::grey);
-    sideItemOscB.setButtonText("Oscillator B");
-
     addAndMakeVisible (sideItemMatrix);
-    addAndMakeVisible (sideItemOscA);
-    addAndMakeVisible (sideItemOscB);
+
+    for (auto osc = 0; osc < NUMBER_OF_OSCILLATORS; ++osc)
+    {
+        sideItemOscs[osc].setColour (juce::TextButton::buttonColourId, juce::Colours::grey);
+        sideItemOscs[osc].setButtonText("Oscillator " + std::to_string(osc));
+        sideItemOscs[osc].onClick = [this, osc] { switchToOscillatorPage(osc); };
+
+        addAndMakeVisible (sideItemOscs[osc]);
+
+        oscViews.push_back(OscillatorView(osc));
+    }
 
     addAndMakeVisible(&matrixPage);
     addAndMakeVisible(&oscillatorPage);
@@ -74,8 +77,12 @@ void AudioPluginAudioProcessorEditor::resized()
     //TODO: Hardcoded value
     auto sideItemMargin = 5;
     sideItemMatrix.setBounds (sideBarArea.removeFromTop (sideItemHeight).reduced (sideItemMargin));
-    sideItemOscA.setBounds (sideBarArea.removeFromTop (sideItemHeight).reduced (sideItemMargin));
-    sideItemOscB.setBounds (sideBarArea.removeFromTop (sideItemHeight).reduced (sideItemMargin));
+
+    for (auto osc = 0; osc < NUMBER_OF_OSCILLATORS; ++osc)
+    {
+        sideItemOscs[osc].setBounds(sideBarArea.removeFromTop (sideItemHeight).reduced (sideItemMargin));
+
+    }
 
     currentPage->setBounds(area);
  

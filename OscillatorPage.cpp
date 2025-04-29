@@ -2,6 +2,7 @@
 #include "PluginProcessor.h"
 #include "constants.h"
 #include "EnvelopeEditor.cpp"
+#include "OscillatorView.cpp"
 
 class OscillatorPage : public juce::Component,
                    public juce::Slider::Listener
@@ -58,7 +59,7 @@ void sliderValueChanged (juce::Slider* slider) override
         if (slider == &harmonicVolumeSlider[i])
         {
             //Call the method to actually update the value
-            processorRef.setHarmonicVolume(0, i, new_value);
+            processorRef.setHarmonicVolume(currentOsc->getOscNumber(), i, new_value);
             return;
         }
         
@@ -68,9 +69,20 @@ void sliderValueChanged (juce::Slider* slider) override
     // TODO: Should have some error reporting instead
     return;
 }
+
+void setOscView(OscillatorView* osc_view)
+{
+    //TODO: Should load the values of the sliders
+
+    currentOsc = osc_view;
+    envelope.setOscView(osc_view);
+}
+
 private:
 
     AudioPluginAudioProcessor& processorRef;
+
+    OscillatorView* currentOsc;
 
     juce::Slider harmonicVolumeSlider[NUMBER_OF_HARMONICS];
 
