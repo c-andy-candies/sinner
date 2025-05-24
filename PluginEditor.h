@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include <vector>
 #include "PluginProcessor.h"
 #include "MatrixPage.cpp"
