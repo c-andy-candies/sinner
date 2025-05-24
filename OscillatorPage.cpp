@@ -79,11 +79,15 @@ void sliderValueChanged (juce::Slider* slider) override
 
 void setOscView(OscillatorView* osc_view)
 {
-    //TODO: Should load the values of the sliders
-
     currentOsc = osc_view;
     envelope.setOscView(osc_view);
     envelopeRangesEditor.setOscView(osc_view);
+
+    for (auto harmonic_number = 0; harmonic_number < NUMBER_OF_HARMONICS; ++harmonic_number)
+    {
+        harmonicVolumeSlider[harmonic_number].setValue(processorRef.getHarmonicVolume(currentOsc->getOscNumber(), harmonic_number), juce::NotificationType::dontSendNotification);
+    }
+
 }
 
 private:

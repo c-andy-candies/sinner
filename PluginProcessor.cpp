@@ -244,7 +244,12 @@ void AudioPluginAudioProcessor::setOscillatorVolume (int osc, float new_value)
 
 void AudioPluginAudioProcessor::setHarmonicVolume (int osc, int harmonic, float new_value)
 {
-    oscillatorParameters[osc]->getParameter("harmonic" + std::to_string(harmonic) + "_ratio_of_osc_0")->setValueNotifyingHost(new_value);
+    oscillatorParameters[osc]->getParameter("harmonic" + std::to_string(harmonic) + "_ratio_of_osc_" + std::to_string(osc))->setValueNotifyingHost(new_value);
+}
+
+float AudioPluginAudioProcessor::getHarmonicVolume (int osc, int harmonic)
+{
+    return oscillatorParameters[osc]->getParameter("harmonic" + std::to_string(harmonic) + "_ratio_of_osc_" + std::to_string(osc))->getValue();
 }
 
 void AudioPluginAudioProcessor::moveEnvelopePoint (int osc, int point_number, float time_new_value, float amplitude_new_value)

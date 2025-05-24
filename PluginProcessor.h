@@ -56,6 +56,8 @@ public:
 
     void setHarmonicVolume (int osc, int harmonic, float new_value);
 
+    float getHarmonicVolume (int osc, int harmonic);
+
     const std::tuple<const int, std::atomic<float>*, std::atomic<float>*, std::atomic<float>*> addEnvelopePoint (int osc, float time, float amplitude);
 
     void removeEnvelopePoint (int osc, int point_number);
