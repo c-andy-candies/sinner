@@ -26,7 +26,6 @@ private:
  
     juce::TextButton sideItemMatrix;
 
-    //TODO: Should probably put them in an array with length NUMBER_OF_OSCILLATORS
     std::array<juce::TextButton, NUMBER_OF_OSCILLATORS> sideItemOscs;
 
     juce::TextButton footer;
