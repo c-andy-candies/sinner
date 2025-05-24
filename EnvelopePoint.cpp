@@ -9,6 +9,11 @@ public:
 
     EnvelopePoint() : pointNumber(-1) {}
 
+    EnvelopePoint(float val) : pointNumber(-1)
+    {
+        time = new std::atomic<float>(val);
+    }
+
     EnvelopePoint(int number, std::atomic<float>* time_ptr, std::atomic<float>* amplitude_ptr, std::atomic<float>* interpolation_ptr)
         : pointNumber(number), time(time_ptr), amplitude(amplitude_ptr), interpolation(interpolation_ptr) 
         {

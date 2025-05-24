@@ -62,6 +62,7 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
         for(auto env = 0; env < NUMBER_OF_ENVELOPE_POINTS; ++env)
         {
             inactiveEnvelopePoints[i].push_back(env);
+            inactiveEnvelopeRanges[i].push_back(env);
         }
         
     } 
@@ -233,19 +234,16 @@ void AudioPluginAudioProcessor::setToOutput (int i, float new_value)
 
 void AudioPluginAudioProcessor::setOscillatorRatio (int osc, float new_value)
 {
-    //TODO: need to call it on the correct osc
     oscillatorParameters[osc]->getParameter("osc_" + std::to_string(osc) + "_ratio")->setValueNotifyingHost(new_value);
 }
 
 void AudioPluginAudioProcessor::setOscillatorVolume (int osc, float new_value)
 {
-    //TODO: need to call it on the correct osc
     oscillatorParameters[osc]->getParameter("osc_" + std::to_string(osc) + "_volume")->setValueNotifyingHost(new_value);
 }
 
 void AudioPluginAudioProcessor::setHarmonicVolume (int osc, int harmonic, float new_value)
 {
-    //TODO: need to call it on the correct osc
     oscillatorParameters[osc]->getParameter("harmonic" + std::to_string(harmonic) + "_ratio_of_osc_0")->setValueNotifyingHost(new_value);
 }
 
@@ -262,7 +260,6 @@ void AudioPluginAudioProcessor::moveEnvelopePoint (int osc, int point_number, fl
 
 const int AudioPluginAudioProcessor::getInactiveEnvelopePoint(int osc)
 {
-    //TODO: need to do it for the correct osc
 
     auto inactivePoint = inactiveEnvelopePoints[osc].back();
     inactiveEnvelopePoints[osc].pop_back();
@@ -290,8 +287,48 @@ const std::tuple<const int, std::atomic<float>*, std::atomic<float>*, std::atomi
 
 void AudioPluginAudioProcessor::removeEnvelopePoint(int osc, int point_number)
 {
-    //TODO: need to do it for the correct osc
     inactiveEnvelopePoints[osc].push_back(point_number);
+}
+
+void AudioPluginAudioProcessor::moveEnvelopeRange (int osc, int range_number, float time_new_value)
+{
+
+    auto oscillator_number = std::to_string(osc);
+    auto envelope_range_number = std::to_string(range_number);
+
+    oscillatorParameters[osc]->getParameter("env_range" + envelope_range_number + "start_osc" + oscillator_number)->setValueNotifyingHost(time_new_value);
+
+}
+
+const int AudioPluginAudioProcessor::getInactiveEnvelopeRange(int osc)
+{
+
+    auto inactiveRange = inactiveEnvelopeRanges[osc].back();
+    inactiveEnvelopeRanges[osc].pop_back();
+    return inactiveRange;
+
+}
+
+const std::tuple<const int, std::atomic<float>*, std::atomic<float>*> AudioPluginAudioProcessor::addEnvelopeRange (int osc, float time_new_value)
+{
+
+    auto oscillator_number = std::to_string(osc);
+    
+    auto range_number = getInactiveEnvelopeRange(osc);
+    auto envelope_range_number = std::to_string(range_number);
+
+    oscillatorParameters[osc]->getParameter("env_range" + envelope_range_number + "start_osc" + oscillator_number)->setValueNotifyingHost(time_new_value);
+    oscillatorParameters[osc]->getParameter("env_range" + envelope_range_number + "reps_osc" + oscillator_number)->setValueNotifyingHost(1);
+
+    auto time_ptr = oscillatorParameters[osc]->getRawParameterValue     ("env_range" + envelope_range_number + "start_osc" + oscillator_number);
+    auto reps_ptr = oscillatorParameters[osc]->getRawParameterValue("env_range" + envelope_range_number + "reps_osc" + oscillator_number);
+    
+    return std::make_tuple(range_number, time_ptr, reps_ptr); 
+}
+
+void AudioPluginAudioProcessor::removeEnvelopeRange(int osc, int range_number)
+{
+    inactiveEnvelopeRanges[osc].push_back(range_number);
 }
 
 juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::createMatrixParameterLayout()
@@ -356,6 +393,20 @@ juce::AudioProcessorValueTreeState::ParameterLayout AudioPluginAudioProcessor::c
 
         //Type of interpolation of the curve which ENDS in this point
         layout.add(std::make_unique<juce::AudioParameterFloat>("env_curve" + point_number + "_interp_osc_" + oscillator_number, "Envelope Curve " + point_number + "'s Interpolation of Oscillator " + oscillator_number, juce::NormalisableRange<float>(0.0f,1.0f), 0.0f));    
+
+    }
+
+    for (auto i = 0; i < NUMBER_OF_ENVELOPE_RANGES; ++i)
+    {
+
+        auto range_number = std::to_string(i);
+
+        // I set the start point of the range as the time value of the point, if a range has start time 1.0f it means that it is inactive, i.e. it starts at the end
+        layout.add(std::make_unique<juce::AudioParameterFloat>("env_range" + range_number + "start_osc" + oscillator_number, "Env Range " + range_number + "'s Start - Osc" + oscillator_number, juce::NormalisableRange<float>(0.0f,1.0f), 1.0f));
+
+        //TODO: harcoded value: max number of repetitions
+        //0 represents infinity
+        layout.add(std::make_unique<juce::AudioParameterInt>("env_range" + range_number + "reps_osc" + oscillator_number, "Env Range " + range_number + "'s Reps - Osc" + oscillator_number, 0, 10, 1));
 
     }
 

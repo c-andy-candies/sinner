@@ -15,6 +15,8 @@ constexpr int NUMBER_OF_OSCILLATORS = 4;
 
 constexpr int NUMBER_OF_ENVELOPE_POINTS = 10;
 
+constexpr int NUMBER_OF_ENVELOPE_RANGES = NUMBER_OF_ENVELOPE_POINTS;
+
 constexpr float SIN_FREQUENCY = 10.0f; //Hz
 constexpr float SIN_FS = 48000.0f;
 

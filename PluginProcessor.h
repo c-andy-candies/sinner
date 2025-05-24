@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <tuple>
 #include <vector>
@@ -59,11 +60,17 @@ public:
 
     void removeEnvelopePoint (int osc, int point_number);
 
-    void toggleStateEnvelopePoint (int osc);
-
     void moveEnvelopePoint (int osc, int point_number, float time, float amplitude);
 
     void changeInterpolationEnvelopeCurve (int osc);
+
+    const std::tuple<const int, std::atomic<float>*, std::atomic<float>*> addEnvelopeRange (int osc, float time);
+
+    void removeEnvelopeRange (int osc, int range_number);
+
+    void moveEnvelopeRange (int osc, int range_number, float time);
+
+    void changeNumberOfRepsEnvelopeRange(int osc, int range_number, int reps);
 
 private:
     //==============================================================================
@@ -80,6 +87,10 @@ private:
     //TODO: might be possible to move into OscillatorView
     std::array<std::vector<int>, NUMBER_OF_OSCILLATORS> inactiveEnvelopePoints;
     const int getInactiveEnvelopePoint(int osc);
+
+    //TODO: might be possible to move into OscillatorView
+    std::array<std::vector<int>, NUMBER_OF_OSCILLATORS> inactiveEnvelopeRanges;
+    const int getInactiveEnvelopeRange(int osc);
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)

@@ -83,7 +83,9 @@ target_sources(AudioPluginExample
         PluginProcessor.h
         PluginProcessor.cpp
         EnvelopePoint.cpp
+        EnvelopeRange.cpp
         OscillatorView.cpp
+        EnvelopeRangesEditor.cpp
         EnvelopeEditor.cpp
         MatrixPage.cpp
         OscillatorPage.cpp

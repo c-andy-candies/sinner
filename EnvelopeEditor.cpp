@@ -32,7 +32,7 @@ public:
         {
 
             //TODO: set the threshold to select a point, it should be the actual size of the point
-            if (std::abs(clicked_time - it->getTime()) < 0.01f && std::abs(clicked_amp - it->getAmplitude()) < 0.01f)
+            if (std::abs(clicked_time - it->getTime()) < 0.04f && std::abs(clicked_amp - it->getAmplitude()) < 0.04f)
             {
 
                 //TODO: UX-wise, is this the best way to delete a point?
@@ -45,8 +45,6 @@ public:
                 } 
                 else 
                 {
-                    // Select this point for dragging
-                    selectedPoint = *it; // Store the selected point
                     selectedPointIndex = it; // Store the iterator to the selected point
                 }
 
@@ -106,7 +104,7 @@ public:
             // Constrain the new position within the boundaries
             auto new_time = jlimit(min_time, max_time, clicked_time);
 
-            processorRef.moveEnvelopePoint(currentOsc->getOscNumber(), selectedPoint.getPointNumber(),  new_time, clicked_amp);
+            processorRef.moveEnvelopePoint(currentOsc->getOscNumber(), selectedPointIndex->getPointNumber(),  new_time, clicked_amp);
 
             repaint();
         }
@@ -131,7 +129,6 @@ private:
     OscillatorView* currentOsc;
 
     std::set<EnvelopePoint>::iterator selectedPointIndex; // Iterator to the selected point
-    EnvelopePoint selectedPoint; // Variable to hold the currently selected point's coordinates
 
     void drawEnvelope(juce::Graphics& g)
     {

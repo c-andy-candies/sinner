@@ -2,13 +2,14 @@
 #include "PluginProcessor.h"
 #include "constants.h"
 #include "EnvelopeEditor.cpp"
+#include "EnvelopeRangesEditor.cpp"
 #include "OscillatorView.cpp"
 
 class OscillatorPage : public juce::Component,
                    public juce::Slider::Listener
 {
 public:
-    OscillatorPage(AudioPluginAudioProcessor& p) : processorRef (p), envelope(processorRef)
+    OscillatorPage(AudioPluginAudioProcessor& p) : processorRef (p), envelope(processorRef), envelopeRangesEditor(processorRef)
     {
 
         juce::ignoreUnused (processorRef);
@@ -25,6 +26,7 @@ public:
         }
 
         addAndMakeVisible(envelope);
+        addAndMakeVisible(envelopeRangesEditor);
 
     }
 
@@ -36,7 +38,12 @@ public:
         //TODO: Hardcoded value
         auto border = 10;
 
-        envelope.setBounds (area.removeFromTop    (area.getHeight() / 2 - border));
+        //TODO: Hardcoded value
+        auto env_ranges_height = 60;
+
+        envelope.setBounds (area.removeFromTop    (area.getHeight() / 2 - env_ranges_height - border / 2));
+
+        envelopeRangesEditor.setBounds(area.removeFromTop    (env_ranges_height - border / 2));
 
         auto element_height = (area.getHeight() - border);
         auto element_width = (area.getWidth() - border) / (NUMBER_OF_HARMONICS);
@@ -76,6 +83,7 @@ void setOscView(OscillatorView* osc_view)
 
     currentOsc = osc_view;
     envelope.setOscView(osc_view);
+    envelopeRangesEditor.setOscView(osc_view);
 }
 
 private:
@@ -87,4 +95,6 @@ private:
     juce::Slider harmonicVolumeSlider[NUMBER_OF_HARMONICS];
 
     EnvelopeEditor envelope;
+
+    EnvelopeRangesEditor envelopeRangesEditor;
 };
